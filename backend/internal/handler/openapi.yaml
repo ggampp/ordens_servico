@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Gestão de Ordens de Serviço com Geolocalização
+  description: API REST para gestão de empregados, ordens de serviço e geolocalização.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - BearerAuth: []
+tags:
+  - name: auth
+  - name: employees
+  - name: service-orders
+  - name: map
+  - name: dashboard
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Autenticar e obter um token JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResult' }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Criar usuário (somente admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '409': { $ref: '#/components/responses/Error' }
+  /employees:
+    get:
+      tags: [employees]
+      summary: Listar empregados
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+        - { name: search, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeePage' }
+    post:
+      tags: [employees]
+      summary: Criar empregado (admin/supervisor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateEmployeeInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Employee' }
+  /employees/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [employees]
+      summary: Consultar empregado
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Employee' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [employees]
+      summary: Atualizar empregado (admin/supervisor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateEmployeeInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Employee' }
+    delete:
+      tags: [employees]
+      summary: Exclusão lógica do empregado (admin/supervisor)
+      responses:
+        '204': { description: No Content }
+  /employees/{id}/position:
+    post:
+      tags: [employees]
+      summary: Registrar posição geográfica
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePositionInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeePosition' }
+  /employees/{id}/positions:
+    get:
+      tags: [employees]
+      summary: Histórico de posições
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200': { description: OK }
+  /service-orders:
+    get:
+      tags: [service-orders]
+      summary: Listar ordens de serviço
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: priority, in: query, schema: { type: string } }
+        - { name: employee_id, in: query, schema: { type: integer } }
+        - { name: date_from, in: query, schema: { type: string, format: date } }
+        - { name: date_to, in: query, schema: { type: string, format: date } }
+        - { name: min_lat, in: query, schema: { type: number } }
+        - { name: min_lng, in: query, schema: { type: number } }
+        - { name: max_lat, in: query, schema: { type: number } }
+        - { name: max_lng, in: query, schema: { type: number } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrderPage' }
+    post:
+      tags: [service-orders]
+      summary: Criar ordem de serviço (admin/supervisor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateServiceOrderInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrder' }
+  /service-orders/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [service-orders]
+      summary: Consultar ordem
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrder' }
+    put:
+      tags: [service-orders]
+      summary: Editar ordem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateServiceOrderInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrder' }
+    delete:
+      tags: [service-orders]
+      summary: Excluir ordem (admin/supervisor)
+      responses:
+        '204': { description: No Content }
+  /service-orders/{id}/status:
+    patch:
+      tags: [service-orders]
+      summary: Alterar status da ordem
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StatusChangeInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrder' }
+  /service-orders/{id}/assign:
+    patch:
+      tags: [service-orders]
+      summary: Atribuir responsável (admin/supervisor)
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceOrder' }
+  /service-orders/{id}/history:
+    get:
+      tags: [service-orders]
+      summary: Histórico de status
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200': { description: OK }
+  /map/employees:
+    get:
+      tags: [map]
+      summary: Empregados com posição atual
+      responses:
+        '200': { description: OK }
+  /map/service-orders:
+    get:
+      tags: [map]
+      summary: Ordens geolocalizadas
+      responses:
+        '200': { description: OK }
+  /map/overview:
+    get:
+      tags: [map]
+      summary: Visão geral do mapa (empregados + ordens)
+      responses:
+        '200': { description: OK }
+  /dashboard:
+    get:
+      tags: [dashboard]
+      summary: Indicadores do dashboard (admin/supervisor)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardSummary' }
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, default: 1 }
+    PageSize:
+      name: page_size
+      in: query
+      schema: { type: integer, default: 20, maximum: 100 }
+  responses:
+    Error:
+      description: Erro
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    LoginResult:
+      type: object
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+    RegisterInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role: { type: string, enum: [admin, supervisor, operator] }
+        employee_id: { type: integer, nullable: true }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string }
+        employee_id: { type: integer, nullable: true }
+        active: { type: boolean }
+    Employee:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        role: { type: string, nullable: true }
+        status: { type: string, enum: [active, inactive] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_position: { $ref: '#/components/schemas/EmployeePosition' }
+    CreateEmployeeInput:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        status: { type: string, enum: [active, inactive] }
+    UpdateEmployeeInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        status: { type: string, enum: [active, inactive] }
+    EmployeePosition:
+      type: object
+      properties:
+        id: { type: integer }
+        employee_id: { type: integer }
+        latitude: { type: number }
+        longitude: { type: number }
+        recorded_at: { type: string, format: date-time }
+    CreatePositionInput:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number }
+        longitude: { type: number }
+        recorded_at: { type: string, format: date-time, nullable: true }
+    ServiceOrder:
+      type: object
+      properties:
+        id: { type: integer }
+        number: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        status: { type: string, enum: [open, assigned, in_progress, completed, cancelled] }
+        employee_id: { type: integer, nullable: true }
+        employee_name: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        latitude: { type: number, nullable: true }
+        longitude: { type: number, nullable: true }
+        opened_at: { type: string, format: date-time }
+        due_at: { type: string, format: date-time, nullable: true }
+        completed_at: { type: string, format: date-time, nullable: true }
+        notes: { type: string, nullable: true }
+    CreateServiceOrderInput:
+      type: object
+      required: [title]
+      properties:
+        number: { type: string }
+        title: { type: string }
+        description: { type: string }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        employee_id: { type: integer }
+        address: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        due_at: { type: string, format: date-time }
+        notes: { type: string }
+    UpdateServiceOrderInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        priority: { type: string }
+        address: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        due_at: { type: string, format: date-time }
+        notes: { type: string }
+    StatusChangeInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [open, assigned, in_progress, completed, cancelled] }
+        note: { type: string }
+    AssignInput:
+      type: object
+      required: [employee_id]
+      properties:
+        employee_id: { type: integer }
+    DashboardSummary:
+      type: object
+      properties:
+        open_orders: { type: integer }
+        in_progress_orders: { type: integer }
+        completed_orders: { type: integer }
+        assigned_orders: { type: integer }
+        cancelled_orders: { type: integer }
+        active_employees: { type: integer }
+        orders_by_employee:
+          type: array
+          items:
+            type: object
+            properties:
+              employee_id: { type: integer, nullable: true }
+              employee_name: { type: string }
+              count: { type: integer }
+        orders_by_priority:
+          type: object
+          additionalProperties: { type: integer }
+    EmployeePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Employee' }
+        page: { type: integer }
+        page_size: { type: integer }
+        total_items: { type: integer }
+        total_pages: { type: integer }
+    ServiceOrderPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ServiceOrder' }
+        page: { type: integer }
+        page_size: { type: integer }
+        total_items: { type: integer }
+        total_pages: { type: integer }
