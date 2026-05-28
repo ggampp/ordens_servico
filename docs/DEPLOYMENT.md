@@ -17,12 +17,16 @@ Variáveis relevantes:
 
 | Variável               | Descrição                                            | Padrão                |
 |------------------------|------------------------------------------------------|-----------------------|
-| `DATABASE_URL`         | URL de conexão PostgreSQL/PostGIS (usada pelo backend) | montada no compose  |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciais do Postgres               | ordens / ordens / ordens_servico |
+| `DATABASE_URL`         | **Configuração única do banco.** URL de conexão PostgreSQL/PostGIS (já contém usuário, senha, host e nome do banco). | Postgres embutido (`postgres://ordens_servico:ordens_servico@postgres:5432/ordens_servico?sslmode=disable`) |
 | `JWT_SECRET`           | **Troque em produção**                               | change-me-in-production |
 | `JWT_EXPIRY_HOURS`     | Validade do token                                    | 24                    |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Admin inicial                    | admin@ordens.local / admin123 |
 | `FRONTEND_PORT` / `BACKEND_PORT` | Portas expostas no host                    | 3000 / 8080           |
+
+> Não há variáveis separadas de usuário/senha/nome do banco — tudo vem da
+> `DATABASE_URL`. Se ela for deixada em branco, o backend usa o serviço
+> `postgres` embutido no Compose. Para apontar a um Postgres
+> externo/gerenciado, basta definir a `DATABASE_URL`.
 
 > **Importante:** em produção altere `JWT_SECRET` e a senha do admin.
 
@@ -34,7 +38,7 @@ docker compose up --build -d
 
 Isso provisiona três contêineres:
 
-1. **db** — PostgreSQL 16 com PostGIS 3.4 (volume persistente `db_data`).
+1. **postgres** — PostgreSQL 16 com PostGIS 3.4 (volume persistente `db_data`).
 2. **backend** — API Go. Na inicialização: aguarda o banco, aplica as
    migrações (incluindo `CREATE EXTENSION postgis`) e semeia o admin.
 3. **frontend** — Nginx servindo a SPA e fazendo proxy de `/api` para o backend.
@@ -61,10 +65,10 @@ docker compose down -v             # parar e apagar dados
 
 ```bash
 # Backup
-docker compose exec db pg_dump -U ordens ordens_servico > backup.sql
+docker compose exec postgres pg_dump -U ordens_servico ordens_servico > backup.sql
 
 # Restauração
-cat backup.sql | docker compose exec -T db psql -U ordens ordens_servico
+cat backup.sql | docker compose exec -T postgres psql -U ordens_servico ordens_servico
 ```
 
 ## 7. Migrações
