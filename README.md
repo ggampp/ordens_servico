@@ -65,7 +65,7 @@ Login inicial (semeado automaticamente na primeira execução):
 
 ```bash
 cd backend
-export DATABASE_URL="postgres://ordens:ordens@localhost:5432/ordens_servico?sslmode=disable"
+export DATABASE_URL="postgres://ordens_servico:ordens_servico@localhost:5432/ordens_servico?sslmode=disable"
 go run ./cmd/api
 ```
 

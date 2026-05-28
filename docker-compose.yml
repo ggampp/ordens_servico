@@ -1,17 +1,17 @@
 services:
-  db:
+  postgres:
     image: postgis/postgis:16-3.4
     container_name: ordens_db
     environment:
-      POSTGRES_USER: ${DB_USER:-ordens}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-ordens}
-      POSTGRES_DB: ${DB_NAME:-ordens_servico}
+      POSTGRES_USER: ordens_servico
+      POSTGRES_PASSWORD: ordens_servico
+      POSTGRES_DB: ordens_servico
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ordens} -d ${DB_NAME:-ordens_servico}"]
+      test: ["CMD-SHELL", "pg_isready -U ordens_servico -d ordens_servico"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,11 +20,12 @@ services:
     build: ./backend
     container_name: ordens_backend
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
     environment:
-      # The application connects exclusively via the PostgreSQL/PostGIS URL.
-      DATABASE_URL: postgres://${DB_USER:-ordens}:${DB_PASSWORD:-ordens}@db:5432/${DB_NAME:-ordens_servico}?sslmode=disable
+      # Single source of database configuration: the connection URL already
+      # carries user, password, host and database name.
+      DATABASE_URL: ${DATABASE_URL:-postgres://ordens_servico:ordens_servico@postgres:5432/ordens_servico?sslmode=disable}
       PORT: "8080"
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
