@@ -46,10 +46,10 @@ Serviços:
 
 | Serviço   | URL                                |
 |-----------|------------------------------------|
-| Frontend  | http://localhost:3000              |
-| Backend   | http://localhost:8080/api/v1       |
-| Swagger   | http://localhost:8080/swagger      |
-| Health    | http://localhost:8080/health       |
+| Frontend  | http://localhost:8080              |
+| Backend   | http://localhost:8081/api/v1       |
+| Swagger   | http://localhost:8081/swagger      |
+| Health    | http://localhost:8081/health       |
 
 Login inicial (semeado automaticamente na primeira execução):
 

@@ -32,16 +32,20 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@ordens.local}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
+    # Backend is only reachable internally via nginx proxy.
+    # Expose BACKEND_PORT (e.g. 8081) locally for direct API / debugging.
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT:-127.0.0.1:8081}:8080"
 
   frontend:
     build: ./frontend
     container_name: ordens_frontend
     depends_on:
       - backend
+    # Exposed on port 8080 so the platform reverse-proxy (which expects 8080)
+    # lands on nginx, which serves the SPA and proxies /api/ to the backend.
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-8080}:80"
 
 volumes:
   db_data:

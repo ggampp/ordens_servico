@@ -21,7 +21,8 @@ Variáveis relevantes:
 | `JWT_SECRET`           | **Troque em produção**                               | change-me-in-production |
 | `JWT_EXPIRY_HOURS`     | Validade do token                                    | 24                    |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Admin inicial                    | admin@ordens.local / admin123 |
-| `FRONTEND_PORT` / `BACKEND_PORT` | Portas expostas no host                    | 3000 / 8080           |
+| `FRONTEND_PORT` | Porta do nginx (frontend) exposta no host. Plataformas que esperam a aplicação na porta 8080 já funcionam com o padrão. | 8080 |
+| `BACKEND_PORT`  | Porta do backend exposta no host (loopback) para acesso direto à API. Normalmente não precisa ser alterada. | `127.0.0.1:8081` |
 
 > Não há variáveis separadas de usuário/senha/nome do banco — tudo vem da
 > `DATABASE_URL`. Se ela for deixada em branco, o backend usa o serviço
