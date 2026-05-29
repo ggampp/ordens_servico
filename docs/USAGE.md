@@ -2,7 +2,7 @@
 
 ## Acesso
 
-1. Abra `http://localhost:3000`.
+1. Abra `http://localhost:8080`.
 2. Faça login. O usuário inicial é `admin@ordens.local` / `admin123` (altere depois).
 
 A navegação superior muda conforme o perfil:

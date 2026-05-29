@@ -21,8 +21,7 @@ Variáveis relevantes:
 | `JWT_SECRET`           | **Troque em produção**                               | change-me-in-production |
 | `JWT_EXPIRY_HOURS`     | Validade do token                                    | 24                    |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Admin inicial                    | admin@ordens.local / admin123 |
-| `FRONTEND_PORT` | Porta do nginx (frontend) exposta no host. Plataformas que esperam a aplicação na porta 8080 já funcionam com o padrão. | 8080 |
-| `BACKEND_PORT`  | Porta do backend exposta no host (loopback) para acesso direto à API. Normalmente não precisa ser alterada. | `127.0.0.1:8081` |
+| `APP_PORT` | Porta única da aplicação (SPA + API) exposta no host. É a porta que o reverse-proxy da plataforma deve alvejar. | 8080 |
 
 > Não há variáveis separadas de usuário/senha/nome do banco — tudo vem da
 > `DATABASE_URL`. Se ela for deixada em branco, o backend usa o serviço
@@ -37,12 +36,18 @@ Variáveis relevantes:
 docker compose up --build -d
 ```
 
-Isso provisiona três contêineres:
+Isso provisiona dois contêineres:
 
 1. **postgres** — PostgreSQL 16 com PostGIS 3.4 (volume persistente `db_data`).
-2. **backend** — API Go. Na inicialização: aguarda o banco, aplica as
-   migrações (incluindo `CREATE EXTENSION postgis`) e semeia o admin.
-3. **frontend** — Nginx servindo a SPA e fazendo proxy de `/api` para o backend.
+2. **app** — monólito de porta única: a API Go serve também a SPA já compilada.
+   Na inicialização: aguarda o banco, aplica as migrações (incluindo
+   `CREATE EXTENSION postgis`) e semeia o admin. Toda a aplicação (SPA + `/api`)
+   responde na porta 8080.
+
+> **Por que um único serviço?** Servir a SPA e a API pelo mesmo processo/porta
+> elimina qualquer ambiguidade sobre qual contêiner o reverse-proxy da
+> plataforma deve alvejar — havia o sintoma de "404 page not found" (resposta
+> padrão do roteador Go) quando o proxy caía no backend em vez do nginx.
 
 ## 4. Verificação
 
@@ -51,7 +56,7 @@ curl http://localhost:8080/health
 # {"status":"ok", ...}
 ```
 
-Acesse `http://localhost:3000` e faça login com o admin semeado.
+Acesse `http://localhost:8080` e faça login com o admin semeado.
 
 ## 5. Operação
 
@@ -87,4 +92,4 @@ A arquitetura monolítica permite rodar tudo em uma única VM:
 2. Clone o repositório e configure o `.env`.
 3. `docker compose up --build -d`.
 4. (Recomendado) Coloque um proxy reverso (Nginx/Caddy/Traefik) com TLS à
-   frente da porta do frontend.
+   frente da porta da aplicação (`APP_PORT`, padrão 8080).

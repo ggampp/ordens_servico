@@ -44,12 +44,15 @@ docker compose up --build
 
 Serviços:
 
-| Serviço   | URL                                |
+A aplicação é um **monólito de porta única**: o backend Go serve a SPA e a API
+na mesma porta (8080).
+
+| Recurso   | URL                                |
 |-----------|------------------------------------|
-| Frontend  | http://localhost:8080              |
-| Backend   | http://localhost:8081/api/v1       |
-| Swagger   | http://localhost:8081/swagger      |
-| Health    | http://localhost:8081/health       |
+| Aplicação (SPA) | http://localhost:8080        |
+| API       | http://localhost:8080/api/v1       |
+| Swagger   | http://localhost:8080/swagger      |
+| Health    | http://localhost:8080/health       |
 
 Login inicial (semeado automaticamente na primeira execução):
 

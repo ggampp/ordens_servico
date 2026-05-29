@@ -61,7 +61,7 @@ func main() {
 		Dashboard: handler.NewDashboardHandler(service.NewDashboardService(dashboardRepo)),
 	}
 
-	router := handler.NewRouter(handlers, jwtManager)
+	router := handler.NewRouter(handlers, jwtManager, cfg.StaticDir)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

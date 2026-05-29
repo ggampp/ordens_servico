@@ -2,6 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ggampp/ordens_servico/backend/internal/auth"
@@ -22,7 +25,11 @@ type Handlers struct {
 }
 
 // NewRouter wires middleware, routes and role-based access control.
-func NewRouter(h Handlers, jwt *auth.Manager) http.Handler {
+//
+// When staticDir points to a directory containing the built SPA, the backend
+// also serves the frontend, turning the service into a single-port monolith
+// (API under /api/v1, SPA everywhere else). Pass "" to disable.
+func NewRouter(h Handlers, jwt *auth.Manager, staticDir string) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(mw.Recoverer)
@@ -103,5 +110,46 @@ func NewRouter(h Handlers, jwt *auth.Manager) http.Handler {
 		})
 	})
 
+	// Serve the built SPA (single-port monolith) when a static dir is provided.
+	if spa := newSPAHandler(staticDir); spa != nil {
+		r.NotFound(spa)
+	}
+
 	return r
+}
+
+// newSPAHandler returns a handler that serves static assets from dir and falls
+// back to index.html for client-side routes. It returns nil when dir is empty
+// or has no index.html, leaving chi's default 404 in place (e.g. in tests).
+func newSPAHandler(dir string) http.HandlerFunc {
+	if dir == "" {
+		return nil
+	}
+	index := filepath.Join(dir, "index.html")
+	if _, err := os.Stat(index); err != nil {
+		return nil
+	}
+	fs := http.Dir(dir)
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		// Never let unknown API paths fall through to the SPA.
+		if strings.HasPrefix(req.URL.Path, "/api/") {
+			httpx.WriteError(w, httpx.NewNotFound("recurso não encontrado"))
+			return
+		}
+
+		// Serve the requested asset when it exists; otherwise the SPA shell.
+		clean := filepath.Clean(req.URL.Path)
+		if clean != "/" && clean != "." {
+			if f, err := fs.Open(clean); err == nil {
+				if info, statErr := f.Stat(); statErr == nil && !info.IsDir() {
+					http.ServeContent(w, req, info.Name(), info.ModTime(), f)
+					_ = f.Close()
+					return
+				}
+				_ = f.Close()
+			}
+		}
+		http.ServeFile(w, req, index)
+	}
 }

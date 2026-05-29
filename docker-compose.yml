@@ -16,9 +16,12 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
-    build: ./backend
-    container_name: ordens_backend
+  # Single-image monolith: the Go API also serves the built React SPA, so all
+  # HTTP traffic (SPA + /api/v1) is handled on one port. This removes any
+  # ambiguity about which container a platform reverse-proxy should target.
+  app:
+    build: .
+    container_name: ordens_app
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,20 +35,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@ordens.local}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
-    # Backend is only reachable internally via nginx proxy.
-    # Expose BACKEND_PORT (e.g. 8081) locally for direct API / debugging.
     ports:
-      - "${BACKEND_PORT:-127.0.0.1:8081}:8080"
-
-  frontend:
-    build: ./frontend
-    container_name: ordens_frontend
-    depends_on:
-      - backend
-    # Exposed on port 8080 so the platform reverse-proxy (which expects 8080)
-    # lands on nginx, which serves the SPA and proxies /api/ to the backend.
-    ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${APP_PORT:-8080}:8080"
 
 volumes:
   db_data:
