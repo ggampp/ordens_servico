@@ -2,7 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // During development, /api is proxied to the Go backend so the SPA and API
-// share an origin. In production the SPA is served by Nginx which proxies /api.
+// share an origin. In production the built SPA is served by the Go backend
+// itself (single-port monolith), so the same relative /api paths just work.
 export default defineConfig({
   plugins: [react()],
   server: {

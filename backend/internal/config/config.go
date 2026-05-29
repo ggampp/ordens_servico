@@ -18,6 +18,9 @@ type Config struct {
 	LogLevel       string
 	SeedAdminEmail string
 	SeedAdminPass  string
+	// StaticDir, when set and containing an index.html, makes the backend
+	// also serve the built SPA (single-port monolith). Empty disables it.
+	StaticDir string
 }
 
 // Load reads configuration from the environment, applying sensible defaults
@@ -35,6 +38,7 @@ func Load() *Config {
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		SeedAdminEmail: getEnv("SEED_ADMIN_EMAIL", "admin@ordens.local"),
 		SeedAdminPass:  getEnv("SEED_ADMIN_PASSWORD", "admin123"),
+		StaticDir:      getEnv("STATIC_DIR", ""),
 	}
 }
 
