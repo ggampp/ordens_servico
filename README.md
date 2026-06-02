@@ -26,7 +26,8 @@ O Compose segue o padrao esperado pela Forja:
 - bind da aplicacao: `0.0.0.0`;
 - variaveis carregadas por `env_file: .env`;
 - banco acessado exclusivamente por `DATABASE_URL`;
-- sem `ports`, `container_name`, labels do Traefik, redes externas ou servico de banco local.
+- labels Traefik (TLS + porta 8080) no compose do projeto;
+- sem `ports`, `container_name`, redes externas ou servico de banco local no compose base.
 
 Crie ou vincule o banco pela aba Banco da Forja. Quando o banco estiver
 vinculado ao app, a Forja injeta `DATABASE_URL` automaticamente.
@@ -51,8 +52,14 @@ como `JWT_SECRET`, `JWT_EXPIRY_HOURS`, `LOG_LEVEL`, `SEED_ADMIN_EMAIL` e
 
 ## Desenvolvimento local
 
-Para rodar localmente, configure um `.env` com uma `DATABASE_URL` valida para um
-banco PostgreSQL/PostGIS acessivel pelo container ou pelo processo Go.
+Com Postgres embutido:
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+```
+
+Sem Docker, configure um `.env` com `DATABASE_URL` valida para PostgreSQL/PostGIS.
 
 Backend:
 

@@ -9,3 +9,8 @@ services:
       HOST: "0.0.0.0"
     expose:
       - "8080"
+    labels:
+      - "traefik.http.routers.forja-ordens-servico.tls=true"
+      - "traefik.http.routers.forja-ordens-servico.tls.certresolver=le"
+      - "traefik.http.routers.forja-ordens-servico.service=forja-ordens-servico"
+      - "traefik.http.services.forja-ordens-servico.loadbalancer.server.port=8080"

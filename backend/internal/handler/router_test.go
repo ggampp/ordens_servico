@@ -82,11 +82,13 @@ func TestNoStaticDirLeavesDefault404(t *testing.T) {
 
 func TestHealthEndpoint(t *testing.T) {
 	r := newTestRouter(t, "")
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
+	for _, path := range []string{"/health", "/healthz"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s: status = %d, want 200", path, w.Code)
+		}
 	}
 }
 

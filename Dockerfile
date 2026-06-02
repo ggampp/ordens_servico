@@ -26,6 +26,8 @@ COPY --from=backend /api /api
 COPY --from=frontend /app/dist /web
 # STATIC_DIR makes the Go server also serve the built SPA (single-port monolith).
 ENV STATIC_DIR=/web
+ENV PORT=8080
+ENV HOST=0.0.0.0
 USER appuser
 EXPOSE 8080
 ENTRYPOINT ["/api"]

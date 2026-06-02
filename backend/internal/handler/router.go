@@ -42,10 +42,12 @@ func NewRouter(h Handlers, jwt *auth.Manager, staticDir string) http.Handler {
 		MaxAge:           300,
 	}))
 
-	// Health check.
-	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+	// Health checks (Traefik / Forja diagnostics use /healthz).
+	health := func(w http.ResponseWriter, _ *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"status": "ok", "time": time.Now()})
-	})
+	}
+	r.Get("/health", health)
+	r.Get("/healthz", health)
 
 	// API documentation (Swagger UI + OpenAPI spec).
 	r.Get("/swagger", swaggerUI)
