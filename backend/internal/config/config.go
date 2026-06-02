@@ -6,11 +6,9 @@ import (
 	"time"
 )
 
-// defaultDatabaseURL is used for local development when DATABASE_URL is unset.
-const defaultDatabaseURL = "postgres://ordens_servico:ordens_servico@localhost:5432/ordens_servico?sslmode=disable"
-
 // Config holds all runtime configuration loaded from environment variables.
 type Config struct {
+	Host           string
 	Port           string
 	DatabaseURL    string
 	JWTSecret      string
@@ -23,16 +21,17 @@ type Config struct {
 	StaticDir string
 }
 
-// Load reads configuration from the environment, applying sensible defaults
-// so the service can run locally without an exhaustive setup.
+// Load reads configuration from the environment. DATABASE_URL is intentionally
+// read without a fallback because the database must be provided by the runtime.
 func Load() *Config {
 	expiryHours, _ := strconv.Atoi(getEnv("JWT_EXPIRY_HOURS", "24"))
 
 	return &Config{
+		Host: getEnv("HOST", "0.0.0.0"),
 		Port: getEnv("PORT", "8080"),
 		// The database is configured exclusively through the connection URL,
 		// which already carries user, password, host and database name.
-		DatabaseURL:    getEnv("DATABASE_URL", defaultDatabaseURL),
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
 		JWTSecret:      getEnv("JWT_SECRET", "change-me-in-production"),
 		JWTExpiry:      time.Duration(expiryHours) * time.Hour,
 		LogLevel:       getEnv("LOG_LEVEL", "info"),

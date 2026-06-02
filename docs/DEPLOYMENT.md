@@ -1,95 +1,60 @@
-# Manual de Implantação
+# Manual de Implantacao na Forja
 
-## 1. Pré-requisitos
+Este projeto esta preparado para deploy na Forja usando Docker Compose,
+Traefik e banco PostgreSQL/PostGIS gerenciado pela propria Forja.
 
-- Docker 24+ e Docker Compose v2
-- (Opcional, para desenvolvimento) Go 1.24+ e Node 22+
+## Servico da aplicacao
 
-## 2. Configuração
+O servico principal do Compose se chama `app`.
 
-Copie o arquivo de exemplo e ajuste as variáveis:
+Configure a Forja para rotear o servico `app` na porta interna `8080`.
+O container nao publica portas no host; ele usa apenas `expose`.
 
-```bash
-cp .env.example .env
+## Banco de dados
+
+Crie ou vincule o banco PostgreSQL/PostGIS pela aba Banco da Forja.
+
+Quando o banco for vinculado ao app, a Forja injeta a variavel
+`DATABASE_URL` automaticamente no ambiente do container. A aplicacao usa
+somente essa variavel para acessar o banco.
+
+Nao configure `POSTGRES_HOST`, `POSTGRES_USER`, `POSTGRES_PASSWORD` ou
+`POSTGRES_DB` no app. Tambem nao crie servico `postgres` no Compose do
+projeto.
+
+## Variaveis
+
+O Compose carrega as variaveis geradas pela Forja com:
+
+```yaml
+env_file:
+  - .env
 ```
 
-Variáveis relevantes:
+O `.env.example` contem apenas exemplos:
 
-| Variável               | Descrição                                            | Padrão                |
-|------------------------|------------------------------------------------------|-----------------------|
-| `DATABASE_URL`         | **Configuração única do banco.** URL de conexão PostgreSQL/PostGIS (já contém usuário, senha, host e nome do banco). | Postgres embutido (`postgres://ordens_servico:ordens_servico@postgres:5432/ordens_servico?sslmode=disable`) |
-| `JWT_SECRET`           | **Troque em produção**                               | change-me-in-production |
-| `JWT_EXPIRY_HOURS`     | Validade do token                                    | 24                    |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Admin inicial                    | admin@ordens.local / admin123 |
-| `APP_PORT` | Porta única da aplicação (SPA + API) exposta no host. É a porta que o reverse-proxy da plataforma deve alvejar. | 8080 |
+```env
+PORT=8080
+HOST=0.0.0.0
+DATABASE_URL=postgres://usuario:senha@host:5432/banco?sslmode=disable
+```
 
-> Não há variáveis separadas de usuário/senha/nome do banco — tudo vem da
-> `DATABASE_URL`. Se ela for deixada em branco, o backend usa o serviço
-> `postgres` embutido no Compose. Para apontar a um Postgres
-> externo/gerenciado, basta definir a `DATABASE_URL`.
+## Deploy
 
-> **Importante:** em produção altere `JWT_SECRET` e a senha do admin.
-
-## 3. Subir os serviços
+A Forja deve executar:
 
 ```bash
 docker compose up --build -d
 ```
 
-Isso provisiona dois contêineres:
+O override da Forja injeta as redes e labels necessarias do Traefik. Por isso o
+`docker-compose.yml` do projeto nao deve declarar redes externas, labels do
+Traefik, `container_name` ou `ports`.
 
-1. **postgres** — PostgreSQL 16 com PostGIS 3.4 (volume persistente `db_data`).
-2. **app** — monólito de porta única: a API Go serve também a SPA já compilada.
-   Na inicialização: aguarda o banco, aplica as migrações (incluindo
-   `CREATE EXTENSION postgis`) e semeia o admin. Toda a aplicação (SPA + `/api`)
-   responde na porta 8080.
+## Migrations
 
-> **Por que um único serviço?** Servir a SPA e a API pelo mesmo processo/porta
-> elimina qualquer ambiguidade sobre qual contêiner o reverse-proxy da
-> plataforma deve alvejar — havia o sintoma de "404 page not found" (resposta
-> padrão do roteador Go) quando o proxy caía no backend em vez do nginx.
+As migrations ficam em `backend/internal/database/migrations`, sao embutidas no
+binario Go e rodam na inicializacao usando `DATABASE_URL`.
 
-## 4. Verificação
-
-```bash
-curl http://localhost:8080/health
-# {"status":"ok", ...}
-```
-
-Acesse `http://localhost:8080` e faça login com o admin semeado.
-
-## 5. Operação
-
-```bash
-docker compose logs -f backend     # logs estruturados (JSON)
-docker compose ps                  # status dos serviços
-docker compose down                # parar (mantém o volume de dados)
-docker compose down -v             # parar e apagar dados
-```
-
-## 6. Backup e restauração do banco
-
-```bash
-# Backup
-docker compose exec postgres pg_dump -U ordens_servico ordens_servico > backup.sql
-
-# Restauração
-cat backup.sql | docker compose exec -T postgres psql -U ordens_servico ordens_servico
-```
-
-## 7. Migrações
-
-As migrações ficam em `backend/internal/database/migrations` e são embutidas no
-binário (`go:embed`) e aplicadas idempotentemente na inicialização — não há
-passo manual. Para adicionar uma nova migração, crie
-`NNNNNN_descricao.up.sql` (e `.down.sql`) seguindo a numeração.
-
-## 8. Implantação em servidor único
-
-A arquitetura monolítica permite rodar tudo em uma única VM:
-
-1. Instale Docker e Docker Compose.
-2. Clone o repositório e configure o `.env`.
-3. `docker compose up --build -d`.
-4. (Recomendado) Coloque um proxy reverso (Nginx/Caddy/Traefik) com TLS à
-   frente da porta da aplicação (`APP_PORT`, padrão 8080).
+Se o banco for PostGIS, continue usando a mesma `DATABASE_URL`; a extensao deve
+estar disponivel no banco criado pela Forja.

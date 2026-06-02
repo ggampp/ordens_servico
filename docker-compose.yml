@@ -1,42 +1,11 @@
 services:
-  postgres:
-    image: postgis/postgis:16-3.4
-    container_name: ordens_db
-    environment:
-      POSTGRES_USER: ordens_servico
-      POSTGRES_PASSWORD: ordens_servico
-      POSTGRES_DB: ordens_servico
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ordens_servico -d ordens_servico"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  # Single-image monolith: the Go API also serves the built React SPA, so all
-  # HTTP traffic (SPA + /api/v1) is handled on one port. This removes any
-  # ambiguity about which container a platform reverse-proxy should target.
   app:
     build: .
-    container_name: ordens_app
-    depends_on:
-      postgres:
-        condition: service_healthy
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      # Single source of database configuration: the connection URL already
-      # carries user, password, host and database name.
-      DATABASE_URL: ${DATABASE_URL:-postgres://ordens_servico:ordens_servico@postgres:5432/ordens_servico?sslmode=disable}
       PORT: "8080"
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@ordens.local}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
-    ports:
-      - "${APP_PORT:-8080}:8080"
-
-volumes:
-  db_data:
+      HOST: "0.0.0.0"
+    expose:
+      - "8080"

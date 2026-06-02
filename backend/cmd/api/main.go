@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +26,10 @@ func main() {
 	ctx := context.Background()
 
 	// Database connection + migrations (PostgreSQL + PostGIS via DATABASE_URL).
+	if cfg.DatabaseURL == "" {
+		slog.Error("DATABASE_URL is required")
+		os.Exit(1)
+	}
 	pool, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		slog.Error("database connection failed", "error", err)
@@ -64,14 +69,14 @@ func main() {
 	router := handler.NewRouter(handlers, jwtManager, cfg.StaticDir)
 
 	srv := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              net.JoinHostPort(cfg.Host, cfg.Port),
 		Handler:           router,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Graceful shutdown.
 	go func() {
-		slog.Info("server listening", "port", cfg.Port)
+		slog.Info("server listening", "host", cfg.Host, "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
 			os.Exit(1)

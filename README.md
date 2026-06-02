@@ -1,118 +1,85 @@
-# Sistema de Gestão de Ordens de Serviço com Geolocalização
+# Sistema de Gestao de Ordens de Servico com Geolocalizacao
 
-Aplicação web completa para gestão de Ordens de Serviço (OS) com geolocalização,
-mapa interativo e controle de equipes de campo.
+Aplicacao web para gestao de ordens de servico com geolocalizacao, mapa
+interativo e controle de equipes de campo.
 
-Arquitetura **monolítica** e simples, pensada para um número reduzido de
-usuários, baixo custo operacional e fácil manutenção.
+O projeto e um monolito: o backend Go tambem serve a SPA React compilada. Para
+deploy na Forja, todo o trafego HTTP deve apontar para o servico `app` na porta
+interna `8080`.
 
 ## Stack
 
-| Camada      | Tecnologia                                           |
-|-------------|------------------------------------------------------|
-| Backend     | Go 1.24 · chi · JWT · slog                           |
-| Banco       | PostgreSQL 16 + PostGIS 3.4                           |
-| Frontend    | React 18 · Vite · React-Leaflet (OpenStreetMap) · Tailwind |
-| API         | REST · OpenAPI/Swagger                               |
-| Empacotamento | Docker · Docker Compose                            |
+| Camada | Tecnologia |
+| --- | --- |
+| Backend | Go 1.24, chi, JWT, slog |
+| Banco | PostgreSQL/PostGIS gerenciado pela Forja |
+| Frontend | React 18, Vite, React-Leaflet, Tailwind |
+| API | REST, OpenAPI/Swagger |
+| Deploy | Docker Compose na Forja |
 
-A aplicação se conecta ao banco **exclusivamente pela URL de configuração**
-(`DATABASE_URL`) do PostgreSQL/PostGIS.
+## Deploy na Forja
 
-## Arquitetura em camadas (backend)
+O Compose segue o padrao esperado pela Forja:
 
-```
-cmd/api            -> ponto de entrada / wiring
-internal/
-  config           -> configuração via ambiente (DATABASE_URL, JWT, ...)
-  database         -> conexão pgx + migrações embutidas (PostGIS)
-  model            -> structs de domínio e DTOs
-  repository       -> acesso a dados (SQL)
-  service          -> regras de negócio e perfis de acesso
-  handler          -> HTTP (chi) + Swagger
-  middleware       -> JWT, logging estruturado, recover
-  auth             -> emissão/validação de JWT
-  httpx            -> tratamento centralizado de erros / validação
-```
+- servico principal: `app`;
+- porta interna: `8080`;
+- bind da aplicacao: `0.0.0.0`;
+- variaveis carregadas por `env_file: .env`;
+- banco acessado exclusivamente por `DATABASE_URL`;
+- sem `ports`, `container_name`, labels do Traefik, redes externas ou servico de banco local.
 
-## Execução rápida (Docker Compose)
+Crie ou vincule o banco pela aba Banco da Forja. Quando o banco estiver
+vinculado ao app, a Forja injeta `DATABASE_URL` automaticamente.
 
 ```bash
-cp .env.example .env          # ajuste segredos se desejar
-docker compose up --build
+docker compose up --build -d
 ```
 
-Serviços:
+## Variaveis
 
-A aplicação é um **monólito de porta única**: o backend Go serve a SPA e a API
-na mesma porta (8080).
+O `.env.example` contem apenas exemplos:
 
-| Recurso   | URL                                |
-|-----------|------------------------------------|
-| Aplicação (SPA) | http://localhost:8080        |
-| API       | http://localhost:8080/api/v1       |
-| Swagger   | http://localhost:8080/swagger      |
-| Health    | http://localhost:8080/health       |
+```env
+PORT=8080
+HOST=0.0.0.0
+DATABASE_URL=postgres://usuario:senha@host:5432/banco?sslmode=disable
+```
 
-Login inicial (semeado automaticamente na primeira execução):
-
-- **E-mail:** `admin@ordens.local`
-- **Senha:** `admin123`
-
-> As migrações (incluindo `CREATE EXTENSION postgis`) são aplicadas
-> automaticamente na inicialização do backend.
+Outras variaveis opcionais do backend podem ser definidas no ambiente da Forja,
+como `JWT_SECRET`, `JWT_EXPIRY_HOURS`, `LOG_LEVEL`, `SEED_ADMIN_EMAIL` e
+`SEED_ADMIN_PASSWORD`.
 
 ## Desenvolvimento local
 
-**Backend**
+Para rodar localmente, configure um `.env` com uma `DATABASE_URL` valida para um
+banco PostgreSQL/PostGIS acessivel pelo container ou pelo processo Go.
+
+Backend:
 
 ```bash
 cd backend
-export DATABASE_URL="postgres://ordens_servico:ordens_servico@localhost:5432/ordens_servico?sslmode=disable"
 go run ./cmd/api
 ```
 
-**Frontend**
+Frontend:
 
 ```bash
 cd frontend
 npm install
-npm run dev     # http://localhost:5173 (proxy /api -> :8080)
+npm run dev
 ```
 
-**Testes**
+Testes:
 
 ```bash
-cd backend && go test ./...
+cd backend
+go test ./...
 ```
 
-## Perfis de acesso
+## Documentacao
 
-| Perfil       | Permissões                                                       |
-|--------------|------------------------------------------------------------------|
-| Administrador| Acesso total, incluindo criação de usuários                      |
-| Supervisor   | Gestão de equipes e ordens (sem criar usuários)                  |
-| Operador     | Consulta e atualização **apenas** das ordens atribuídas a si     |
-
-## Documentação
-
-- [Manual de Implantação](docs/DEPLOYMENT.md)
-- [Manual de Utilização](docs/USAGE.md)
-- [Protótipos das Telas](docs/PROTOTYPES.md)
+- [Manual de Implantacao](docs/DEPLOYMENT.md)
+- [Manual de Utilizacao](docs/USAGE.md)
+- [Prototipos das Telas](docs/PROTOTYPES.md)
 - [Modelo do Banco de Dados](docs/DATABASE.md)
-- OpenAPI: `backend/internal/handler/openapi.yaml` (servido em `/swagger`)
-
-## Endpoints principais
-
-Autenticação: `POST /api/v1/auth/login` · `POST /api/v1/auth/register`
-
-Empregados: `GET|POST /employees` · `GET|PUT|DELETE /employees/{id}` ·
-`POST /employees/{id}/position` · `GET /employees/{id}/positions`
-
-Ordens: `GET|POST /service-orders` · `GET|PUT|DELETE /service-orders/{id}` ·
-`PATCH /service-orders/{id}/status` · `PATCH /service-orders/{id}/assign` ·
-`GET /service-orders/{id}/history`
-
-Mapa: `GET /map/employees` · `GET /map/service-orders` · `GET /map/overview`
-
-Dashboard: `GET /dashboard`
+- OpenAPI: `backend/internal/handler/openapi.yaml` servido em `/swagger`
