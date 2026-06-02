@@ -26,17 +26,25 @@ func (s *EmployeeService) Create(ctx context.Context, in model.CreateEmployeeInp
 	if status == "" {
 		status = model.EmployeeActive
 	}
-	e := &model.Employee{
-		Code: in.Code, Name: in.Name, Email: in.Email,
-		Phone: in.Phone, Role: in.Role, Status: status,
-	}
-	if err := s.repo.Create(ctx, e); err != nil {
-		if repository.IsUniqueViolation(err) {
-			return nil, httpx.NewConflict("employee code already exists")
+
+	for attempt := 0; attempt < 3; attempt++ {
+		code, err := s.repo.NextCode(ctx)
+		if err != nil {
+			return nil, err
 		}
-		return nil, err
+		e := &model.Employee{
+			Code: code, Name: in.Name, Email: in.Email,
+			Phone: in.Phone, Role: in.Role, Status: status,
+		}
+		if err := s.repo.Create(ctx, e); err != nil {
+			if repository.IsUniqueViolation(err) {
+				continue
+			}
+			return nil, err
+		}
+		return e, nil
 	}
-	return e, nil
+	return nil, httpx.NewConflict("could not generate a unique employee code")
 }
 
 // Update modifies an employee.

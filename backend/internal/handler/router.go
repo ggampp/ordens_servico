@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -141,9 +142,10 @@ func newSPAHandler(dir string) http.HandlerFunc {
 		}
 
 		// Serve the requested asset when it exists; otherwise the SPA shell.
-		clean := filepath.Clean(req.URL.Path)
-		if clean != "/" && clean != "." {
-			if f, err := fs.Open(clean); err == nil {
+		clean := path.Clean("/" + strings.TrimPrefix(req.URL.Path, "/"))
+		assetPath := strings.TrimPrefix(clean, "/")
+		if assetPath != "" && assetPath != "." {
+			if f, err := fs.Open(assetPath); err == nil {
 				if info, statErr := f.Stat(); statErr == nil && !info.IsDir() {
 					http.ServeContent(w, req, info.Name(), info.ModTime(), f)
 					_ = f.Close()

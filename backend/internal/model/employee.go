@@ -26,7 +26,6 @@ type Employee struct {
 
 // CreateEmployeeInput is the payload for creating an employee.
 type CreateEmployeeInput struct {
-	Code   string  `json:"code" validate:"required,max=50"`
 	Name   string  `json:"name" validate:"required,max=150"`
 	Email  *string `json:"email" validate:"omitempty,email,max=150"`
 	Phone  *string `json:"phone" validate:"omitempty,max=30"`

@@ -351,9 +351,8 @@ components:
         last_position: { $ref: '#/components/schemas/EmployeePosition' }
     CreateEmployeeInput:
       type: object
-      required: [code, name]
+      required: [name]
       properties:
-        code: { type: string }
         name: { type: string }
         email: { type: string }
         phone: { type: string }

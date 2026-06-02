@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/ggampp/ordens_servico/backend/internal/model"
@@ -31,6 +32,22 @@ func (r *EmployeeRepository) Create(ctx context.Context, e *model.Employee) erro
 		RETURNING id, created_at, updated_at`,
 		e.Code, e.Name, e.Email, e.Phone, e.Role, e.Status,
 	).Scan(&e.ID, &e.CreatedAt, &e.UpdatedAt)
+}
+
+// NextCode returns the next six-digit employee code.
+func (r *EmployeeRepository) NextCode(ctx context.Context) (string, error) {
+	var next int64
+	if err := r.pool.QueryRow(ctx, `
+		SELECT COALESCE(MAX(code::integer), 0) + 1
+		FROM employees
+		WHERE code ~ '^[0-9]{6}$'`,
+	).Scan(&next); err != nil {
+		return "", err
+	}
+	if next > 999999 {
+		return "", errors.New("employee code sequence exhausted")
+	}
+	return fmt.Sprintf("%06d", next), nil
 }
 
 // Update modifies an existing, non-deleted employee.

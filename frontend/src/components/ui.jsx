@@ -10,14 +10,15 @@ export function PriorityBadge({ priority }) {
   return <span className={`badge ${p.badge}`}>{p.label}</span>
 }
 
-export function Modal({ open, title, onClose, children }) {
+export function Modal({ open, title, onClose, children, size = 'default' }) {
   if (!open) return null
+  const widthClass = size === 'wide' ? 'max-w-4xl' : 'max-w-lg'
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className={`bg-white rounded-lg shadow-xl w-full ${widthClass} max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-center justify-between border-b px-5 py-3">
           <h3 className="font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">x</button>
         </div>
         <div className="p-5">{children}</div>
       </div>
@@ -33,17 +34,17 @@ export function Pagination({ page, totalPages, onChange }) {
         Anterior
       </button>
       <span className="px-2">
-        Página {page} de {totalPages}
+        Pagina {page} de {totalPages}
       </span>
       <button className="btn-secondary" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
-        Próxima
+        Proxima
       </button>
     </div>
   )
 }
 
 export function Spinner() {
-  return <div className="text-center text-slate-400 py-8">Carregando…</div>
+  return <div className="text-center text-slate-400 py-8">Carregando...</div>
 }
 
 export function ErrorBox({ message }) {

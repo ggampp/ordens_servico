@@ -72,6 +72,9 @@ func (s *ServiceOrderService) Update(ctx context.Context, id int64, in model.Upd
 	if err != nil {
 		return nil, err
 	}
+	if existing.Status != model.StatusOpen {
+		return nil, httpx.NewBadRequest("only open service orders can be edited")
+	}
 	existing.Title = in.Title
 	existing.Description = in.Description
 	if in.Priority != "" {
