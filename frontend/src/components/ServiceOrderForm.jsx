@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import client, { apiError } from '../api/client'
 import { PRIORITY_OPTIONS } from '../constants'
 import { ErrorBox, Modal } from './ui'
-import LocationPicker, { geocodeAddress } from './LocationPicker'
+import LocationPicker from './LocationPicker'
 
 const emptyOrder = {
   title: '',
@@ -50,7 +50,6 @@ export default function ServiceOrderForm({ employees = [], initial, onClose, onS
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [locating, setLocating] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
 
   function up(key, value) {
@@ -64,19 +63,6 @@ export default function ServiceOrderForm({ employees = [], initial, onClose, onS
       latitude: formatCoordinate(location.latitude),
       longitude: formatCoordinate(location.longitude),
     }))
-  }
-
-  async function findCoordinates() {
-    setLocating(true)
-    setError('')
-    try {
-      const location = await geocodeAddress(form.address)
-      applyLocation(location)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLocating(false)
-    }
   }
 
   function payload() {
@@ -146,20 +132,7 @@ export default function ServiceOrderForm({ employees = [], initial, onClose, onS
           )}
         </div>
 
-        <div className="mb-3">
-          <label className="label">Endereco</label>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
-            <input className="input" value={form.address} onChange={(e) => up('address', e.target.value)} />
-            <button type="button" className="btn-secondary" onClick={findCoordinates} disabled={locating}>
-              {locating ? 'Buscando...' : 'Buscar coordenadas'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => setMapOpen(true)}>
-              Abrir mapa
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3">
           <div className="mb-3">
             <label className="label">Latitude</label>
             <input className="input" value={form.latitude} onChange={(e) => up('latitude', e.target.value)} />
@@ -167,6 +140,11 @@ export default function ServiceOrderForm({ employees = [], initial, onClose, onS
           <div className="mb-3">
             <label className="label">Longitude</label>
             <input className="input" value={form.longitude} onChange={(e) => up('longitude', e.target.value)} />
+          </div>
+          <div className="mb-3 flex items-end">
+            <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setMapOpen(true)}>
+              Abrir Mapa
+            </button>
           </div>
         </div>
 
